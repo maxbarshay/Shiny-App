@@ -1,0 +1,121 @@
+---
+title: "Vignette"
+author: "Max Barshay"
+date: "3/13/2019"
+output: html_document
+---
+
+The first thing that we need to do is load in the leaflet package. We use the `library` command to load in packages. The required package is leaflet, but I would recommend using readxl to make importing excel files for coordinate use easier. The ability to read in excel files will come in handy later on. We also load in the tidyverse to make use of the `%>%` function.
+
+```{r message = FALSE}
+library(leaflet)
+library(readxl)
+library(tidyverse)
+```
+
+
+In order to begin with just a regular standard map, we can use the command: `addTiles()` piped into a `leaflet()` command. The `leaflet()` command initializes the map and `addTiles` puts the tiles in to make the map show up on our screens. Pretty amazing we can make an interactive map in just two lines!
+
+
+```{r}
+leaflet() %>% 
+  addTiles()
+```
+
+This map is pretty basic. What if we want to make it look different? We can use `addProviderTiles()` instead of `addTiles()` to customize the look of the map. Simply use `addProviderTiles("the_name_of_the_theme")` after the `leaflet()` function call. Just insert one of the possible provider tiles inside of the quotation marks. There are many themes to choose from. I would recommend going to: https://leaflet-extras.github.io/leaflet-providers/preview/ for an interactive selection of the provider tiles available. 
+
+A big part of customizing our map is controlling the user experience. If we want to limit the amount that our users can zoom in or out on our map, we can use the `leaflet(options = leafletOptions(maxZoom = x, minZoom = y))` command to access leaflets options. This commmand limits the amount that our users can zoom in or out to help ensure that they are using the map for the purpose that we designed it. The options are put inside of the parentheses of the leaflet function.
+
+```{r}
+leaflet(options =  
+          leafletOptions(maxZoom = 15, 
+                         minZoom = 3)) %>% 
+  addProviderTiles("Stamen.Watercolor")
+```
+
+In this example I added both the zoom restrictions as well as a very nice looking theme. You may notice that this map initializes at 0 longitude and 0 latitude, or in other words: the middle of the ocean. What if we want to fix this?
+
+Another important tool in controlling the users experience in leaflet is the `setView()` command. This command is used after we add the tiles, it sets the point that we want the map to be centered at. After the longitude and the latitude of the center point are specified, we have a zoom option that sets the default zoom of the map. Example: `setView(lng = x, lat = y, zoom = z)`. To further control the user experience and keep them looking at what we want them to we can set max bounds for our map. This takes two points in longitude and lattitude format: first the coordinates of the top left corner and then the coordinates of the bottom right corner that we want to restrict our users view to. Example: `setMaxBounds(lng1 = a, lat1 = b, lng2 = c, lat2 = d)` When the user tries to scroll past the edge of these bounds they are bounced back to the centered view specified in the `setView()` command.
+
+Leaflet is a great package for plotting various "things" on maps. In order to plot something on a map you need to know the coordinates. Leaflet is able to read in coordinates from a data frame using the syntax `dataframe$column`, similar to other column references in R. This can come in handy when we do not want to manually type in many coordinates into the leaflet function. 
+
+There are a few different kinds of markers that we can add to our leaflet map. One type of marker is the regular marker which looks similar to markers that you would see on Google Maps. These "pin" markers can be added using the `addMarkers()` command, with room for specifying their style inside of the parentheses. The other kind of markers are circle markers. To add circle markers into our leaflet map we use `addCircleMarkers()` before or after (after in this case) we specify any restrictions for our users.
+
+```{r}
+nfl_stadiums <- read_excel("/Users/mdbarshay/Desktop/R Project/NFL_Locations.xlsx")
+
+leaflet(options =  
+          leafletOptions(maxZoom = 15, 
+                         minZoom = 3.5)) %>% 
+  addTiles() %>% 
+  setView(lng = -97.318332, lat = 38.730409, zoom = 4) %>% 
+  setMaxBounds(lng1 = -140.236335, 
+               lat1 = 56.238897,
+               lng2 = -57.624335,
+               lat2 = 23.107207) %>% 
+  addCircleMarkers(lng = nfl_stadiums$Lon, lat = nfl_stadiums$Lat, label = nfl_stadiums$Name, radius = 2)
+```
+
+In this example, I am reading in an excel file that I made with eight NFL teams in the NFC West and NFC South divisions, using readxl's `read_excel()` function.
+
+As you can see in the map above the locations of NFL stadiums can be hovered over in order to reveal which team they represent. We achieved this by using the label command. The label command is used within the call for circle markers. The size of the circles are specified using the radius command. There are many possibilities for what these markers can look like. If you want to see more: https://rstudio.github.io/leaflet/markers.html.
+
+I specified the `maxBounds` for the map using rough estimates for the top left and bottom right corners of the United States, to make sure my user doesn't get distracted checking out parts of the map that have have no NFL Teams. When adding the circle markers I automated the inputting of the longitudes and latitudes by using the familiar `dataset$column` syntax.
+
+Shifting gears, another key feature of the Leaflet package is its ability to create various shapes.
+
+```{r}
+cities <- read_excel("/Users/mdbarshay/Desktop/R Project/cities.xlsx")
+
+
+leaflet(cities, options = leafletOptions(maxZoom = 15, minZoom = 3.5)) %>%
+  addTiles() %>%
+  setView(lng = -97.318332, lat = 38.730409, zoom = 4) %>% 
+  setMaxBounds(lng1 = -140.236335, 
+               lat1 = 56.238897,
+               lng2 = -57.624335,
+               lat2 = 23.107207) %>% 
+  addCircles(lng = ~Long, lat = ~Lat, weight = 1,
+    radius = ~sqrt(Population) * 80, popup = ~City
+  )
+```
+
+This example which was inspired from the https://rstudio.github.io/leaflet/shapes.html example page, illustrates leaflets ability to use the circle shape in an informative way. Once again I am using the `read_excel()` function from the `readxl` package. Here we utilize leaflets ability to take a data set (in our case an excel file) within the parentheses of its function call. This brings up a useful aspect of the leaflet package. If a data set is specified in the call of the leaflet function we do not need to use the `dataset$column` syntax, but instead we can switch to using the `~column` syntax which can save time and make the code look neater. In this example we are inputting the longitudes and latitudes of cities using the `~` operator and specifying the weight, which is the thickness of the edges of the circle. The most important part of this map is the size of the circle. Once again, like in the `addCircleMarkers()` function the size of the circle is specified using the `radius` command. As I mentioned before, because we passed the dataset into the `leaflet()` function we can make use of the `~` operator. After the `radius = ~` I put the square root transformed population variable. The square root transformation was useful in this case because the populations varied greatly and the map looks much cleaner with more similarly sized circles. I multiplied the transformed population by 80 for style. Lastly, I used `popup = ~City` so that the name of the city would "pop up" when the circle is clicked on. 
+
+One way to get US States into our map is by using the maps package. We make packages available for use in R by using the `library()` function.
+
+```{r message = FALSE}
+library(maps)
+
+states <- map(database = "state", fill = TRUE, plot = FALSE)
+
+leaflet(data = states, options = leafletOptions(maxZoom = 15, minZoom = 3.5)) %>% addTiles() %>% 
+  setView(lng = -97.318332, lat = 38.730409, zoom = 4) %>% 
+  setMaxBounds(lng1 = -140.236335, 
+               lat1 = 56.238897,
+               lng2 = -57.624335,
+               lat2 = 23.107207) %>%
+  addPolygons(fillColor = rainbow(48, alpha = 1), stroke = TRUE)
+```
+
+Unfortunately, by attaching this package we are masking (removing functionality of) the map function from the purrr package, which is not the most practical side effect because the Tidyverse is awesome. However, I would strongly advise using some sort of automation when using the `addPolygons()` function, because it would be awfully tedious to input the multitude of coordinates needed to draw polygons around the states manually. Using the map function from the maps package is just one way that I found to do it, but there are others. In the map call I specified `database = "states"` to load a list of four elements containing everything needed to draw in the states. I also used `fill = TRUE`, which allowed our states to be colored in, and `plot = FALSE` to prevent extra output from being displayed. To color the states I took advantage of the `fillColor` command within `addPolygons()` to fill in the polygons with color. If you want to color all of the polygons the same color, you can simply use the `color` command, but because I wanted the states to be distinct from each other I used the `rainbow` command which creates a vector of contiguous (sharing a common border) colors of all differet colors in the rainbow. The first parameter I specified was `n` or the number of colors in the palette. I used 48 to represent the number of states in the continental US. I specified `alpha = 1` which sets the transparency to 1, with 1 being the least transparent. Finally, I specified `stroke = TRUE` to give the map the look of the thick blue borders between states. This example was greatly inspired by https://rstudio.github.io/leaflet/map_widget.html, but like I said before it is extremely impractical and time consuming to manually input all the the data neccesary for polygons and some automation is virtually neccesary.
+
+More cool and useful functionality of the leaflet package comes as part of a seperate, but connected package called leaflet.extras. Leaflet.extras is built to work with leaflet and can add to leaflet some extra and cool functionality. One of the most useful functions wihtin this leaflet extras package is the `addSearchOSM` function.
+
+```{r}
+library(leaflet.extras)
+
+leaflet() %>% 
+  addProviderTiles("Esri.NatGeoWorldMap") %>% 
+  addSearchOSM()
+```
+
+By adding the `addSearchOSM()` command we were able to add a functional search bar onto our map. To access this function we click on the magnifying glass in the top left corner of the map and search like any other search bar we are used to.
+
+```{r}
+leaflet() %>% 
+  addProviderTiles("Esri.WorldImagery") %>% 
+  addReverseSearchOSM()
+```
+
+We can also add `addReverseSearchOSM()` to allow the users to find what a place is on the map and that places coordinates just by clicking on the map. Although this is a cool function, it seems to me like `addSearchOSM` and `addRevereSearchOSM()` together make up a less polished version of Google Maps. Also, once you place a marker there is no way of removing it without rebooting the map. I would recomend using the leaflet package for making custom maps that would be difficult to do on other platforms. With the tools I have displayed here I believe you are on your way to building custom maps directly in R!!!

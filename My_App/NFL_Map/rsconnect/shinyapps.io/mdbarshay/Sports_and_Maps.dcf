@@ -1,0 +1,12 @@
+name: Sports_and_Maps
+title: Sports_and_Maps
+username:
+account: mdbarshay
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 803862
+bundleId: 1954351
+url: https://mdbarshay.shinyapps.io/Sports_and_Maps/
+when: 1553130641.15842
+asMultiple: FALSE
+asStatic: FALSE
